@@ -13,6 +13,7 @@ ROUND_LOTS = (100, 200, 300, 400, 500)
 ROUND_LOT_SHARE = 0.6
 MAX_QTY = 999
 MAX_SENDER_ORDERS = 16
+PRICE_COLLAR = 0.05  # the exchange rejects orders priced further than this fraction from LAST_PRICE
 TAPE_LENGTH = (36, 44)  # total orders per tape, drawn per trial; independent of how many orders the sender placed
 N_RECENT = 20  # orders the sender sees before acting
 

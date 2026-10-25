@@ -2,7 +2,7 @@ seq  side  price    qty
   0  buy    137.11  400
   1  buy    136.88  100
   2  sell   137.97  500
-  3  buy    137.00  72
+  3  buy    137.00  150
   4  buy    137.41  494
   5  sell   137.63  400
   6  sell   137.58  100
@@ -12,7 +12,7 @@ seq  side  price    qty
  10  sell   137.43  300
  11  sell   137.60  5
  12  sell   137.86  400
- 13  buy    137.00  69
+ 13  sell   137.80  37
  14  sell   137.83  500
  15  buy    137.09  200
  16  buy    137.18  544

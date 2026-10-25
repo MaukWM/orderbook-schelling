@@ -14,7 +14,7 @@ from orderbook_schelling.feed import (
     render_tape,
 )
 
-SENDER = [Order("buy", 137.00, q) for q in (72, 69, 76, 76, 79)]
+SENDER = [Order("buy", 137.00, q) for q in (150, 37, 412, 9, 260)]
 PINNED = (Path(__file__).parent / "fixtures" / "pinned_tape.txt").read_text().rstrip("\n")
 
 
@@ -23,7 +23,7 @@ def lengths(make: Callable[[str], list[FeedEntry]]) -> set[int]:
 
 
 def test_seed_reproduces_exact_tape() -> None:
-    assert render_tape(build_feed([Order("buy", 137.00, 72), Order("buy", 137.00, 69)], "pin")) == PINNED
+    assert render_tape(build_feed([Order("buy", 137.00, 150), Order("sell", 137.80, 37)], "pin")) == PINNED
 
 
 def test_sender_orders_keep_their_order() -> None:
