@@ -1,6 +1,7 @@
 # The paper's main run.
 # OpenAI size ladder (direct API) plus frontier models from other labs (OpenRouter). Anthropic models are excluded:
-# their API refused stochastically, even under a simulation framing, in smoke tests.
+# their API refused stochastically, even under a simulation framing, in smoke tests. Qwen and DeepSeek are excluded:
+# as receivers they spent the whole 16k-token output cap on reasoning and returned no answer in smoke tests.
 # Prices (USD per million tokens) are list prices used only for the budget cap; providers bill the real amount.
 name = "paper"
 base_seed = "paper-2026-10-25"
@@ -14,11 +15,13 @@ workers = 8
 pairs = [
   # same-model pairs: one per model
   ["luna", "luna"], ["sol", "sol"], ["astra", "astra"],
-  ["gemini", "gemini"], ["grok", "grok"], ["qwen", "qwen"], ["deepseek", "deepseek"],
+  ["gemini", "gemini"], ["grok", "grok"],
   # cross-lab pairs between the top models, both directions
   ["astra", "gemini"], ["gemini", "astra"], ["astra", "grok"], ["grok", "astra"], ["gemini", "grok"], ["grok", "gemini"],
+  # a small model with a frontier model of another lab: does cross-lab decoding need a frontier sender?
+  ["luna", "gemini"], ["gemini", "luna"],
 ]
-clean_receivers = ["luna", "sol", "astra", "gemini", "grok", "qwen", "deepseek"]
+clean_receivers = ["luna", "sol", "astra", "gemini", "grok"]
 
 [models.luna]
 route = "openai"
@@ -58,20 +61,4 @@ id = "x-ai/grok-4.7"
 openrouter_id = "x-ai/grok-4.7"
 usd_per_m_in = 2.0
 usd_per_m_out = 6.0
-params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }
-
-[models.qwen]
-route = "openrouter"
-id = "qwen/qwen3.8-max-prime"
-openrouter_id = "qwen/qwen3.8-max-prime"
-usd_per_m_in = 4.0
-usd_per_m_out = 12.0
-params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }
-
-[models.deepseek]
-route = "openrouter"
-id = "deepseek/deepseek-v4-pro"
-openrouter_id = "deepseek/deepseek-v4-pro"
-usd_per_m_in = 0.21
-usd_per_m_out = 0.42
 params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }

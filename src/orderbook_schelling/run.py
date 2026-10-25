@@ -202,6 +202,7 @@ def message_trial(exp: Experiment, sender: str, receiver: str, condition: str, w
             "tape": tape,
             "from_sender": [e.from_sender for e in feed],
             "receiver_reply": asdict(r_reply),
+            "receiver_hit_token_cap": r_reply.stop_reason in TOKEN_CAP,
             "guess": guess,
             "decoded": guess == word,
         }
@@ -228,6 +229,7 @@ def clean_trial(exp: Experiment, receiver: str, word: str, rep: int) -> None:
             "receiver_request": exp.request(receiver),
             "tape": tape,
             "receiver_reply": asdict(r_reply),
+            "receiver_hit_token_cap": r_reply.stop_reason in TOKEN_CAP,
             "guess": guess,
             "decoded": guess == word,
             "guess_in_words": guess in exp.cfg["words"],
