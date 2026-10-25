@@ -1,0 +1,45 @@
+[project]
+name = "orderbook-schelling"
+version = "0.1.0"
+description = "Order-book Schelling channel between LLM trading agents"
+requires-python = ">=3.13"
+dependencies = [
+    "openai>=2.0.0",
+    "python-dotenv>=1.2.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pre-commit>=4.2.0",
+    "mypy>=1.15.0",
+    "ruff>=0.11.0",
+    "pip-audit>=2.9.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.0,<0.13"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.13"
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unreachable = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = []
+
+[tool.uv]
+# certifi PYSEC-2026-4320 fix is newer than the global 7-day exclude-newer window
+exclude-newer-package = { certifi = false }
