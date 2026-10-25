@@ -82,7 +82,7 @@ class Experiment:
         self.done = {row["trial"] for row in rows}
         self.spent = sum(row["cost_usd"] for row in rows)
         self.in_flight = 0
-        self.lock = threading.Lock()
+        self.room = threading.Condition()
 
     def load_model(self, name: str, m: dict[str, Any]) -> Model:
         """A model entry; route_all = "openrouter" sends every model through OpenRouter under its openrouter_id."""
@@ -105,10 +105,12 @@ class Experiment:
         return rows
 
     def start(self, trial: str) -> bool:
-        """Claim a trial unless it is done or the budget, counting trials still running at their cap, is used up."""
-        with self.lock:
-            reserved = self.in_flight * self.cfg["max_usd_per_trial"]
-            if trial in self.done or self.spent + reserved >= self.cfg["budget_usd"]:
+        """Claim a trial once the budget, counting running trials at their cap, has room; False if done or spent."""
+        cap, budget = self.cfg["max_usd_per_trial"], self.cfg["budget_usd"]
+        with self.room:
+            while self.in_flight and self.spent + (self.in_flight + 1) * cap > budget:
+                self.room.wait()  # wait for a running trial to settle its cost
+            if trial in self.done or self.spent + cap > budget:
                 return False
             self.done.add(trial)
             self.in_flight += 1
@@ -116,8 +118,9 @@ class Experiment:
 
     def finish(self, trial: str, row: dict[str, Any] | None, spent_on_failure: float = 0.0) -> None:
         """Record a finished trial; a trial with an API error is released for a retry, but its cost still counts."""
-        with self.lock:
+        with self.room:
             self.in_flight -= 1
+            self.room.notify_all()
             if row is None:
                 self.spent += spent_on_failure
                 self.done.discard(trial)

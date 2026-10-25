@@ -103,10 +103,10 @@ def test_api_errors_are_not_recorded_and_are_retried(setup: tuple[FakeModels, Pa
     assert sum(r["kind"] == "message" and r["decoded"] for r in rows(tmp)) == 4
 
 
-def test_budget_stops_new_trials(setup: tuple[FakeModels, Path]) -> None:
+def test_budget_stops_new_trials_once_a_trial_at_its_cap_would_not_fit(setup: tuple[FakeModels, Path]) -> None:
     _, tmp = setup
-    run.main(str(config(tmp, budget=0.0005)))
-    assert sum(r["cost_usd"] for r in rows(tmp)) <= 0.0005 + 0.01
+    run.main(str(config(tmp, budget=0.0105)))  # cap 0.01 per trial, a fake trial costs 0.0004
+    assert len(rows(tmp)) == 2 and sum(r["cost_usd"] for r in rows(tmp)) <= 0.0105
 
 
 def test_raising_the_budget_resumes_but_another_experiment_refuses_to_mix(setup: tuple[FakeModels, Path]) -> None:
