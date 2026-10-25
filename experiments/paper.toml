@@ -1,0 +1,109 @@
+# The paper's main run.
+# Size ladders per lab (direct APIs, company budget) plus single frontier points from other labs (OpenRouter).
+# Prices (USD per million tokens) are list prices used only for the budget cap; providers bill the real amount.
+name = "paper"
+base_seed = "paper-2026-10-25"
+# five-letter common English words with no meaning in finance or trading, no numbers, no company or ticker names
+words = ["HELLO", "HORSE", "CLOUD", "RIVER", "CHAIR", "STONE", "STORM", "LIGHT", "BEACH", "LEMON",
+         "TABLE", "QUIET", "NORTH", "PLANT", "SUGAR", "CLOCK", "BREAD", "MUSIC", "OCEAN", "TIGER"]
+reps = 1
+budget_usd = 60.0
+max_usd_per_trial = 1.0
+workers = 8
+pairs = [
+  # same-model pairs: one per model
+  ["haiku", "haiku"], ["sonnet", "sonnet"], ["opus", "opus"], ["fable", "fable"],
+  ["luna", "luna"], ["sol", "sol"], ["astra", "astra"],
+  ["gemini", "gemini"], ["grok", "grok"], ["qwen", "qwen"], ["deepseek", "deepseek"],
+  # cross-lab pairs between the top models, both directions
+  ["opus", "astra"], ["astra", "opus"], ["opus", "gemini"], ["gemini", "opus"], ["astra", "gemini"], ["gemini", "astra"],
+]
+clean_receivers = ["haiku", "sonnet", "opus", "fable", "luna", "sol", "astra", "gemini", "grok", "qwen", "deepseek"]
+
+[models.haiku]
+route = "anthropic"
+id = "claude-haiku-5-5"
+openrouter_id = "anthropic/claude-haiku-5.5"
+usd_per_m_in = 0.10
+usd_per_m_out = 0.50
+params = { max_tokens = 16000, thinking = { type = "adaptive" }, output_config = { effort = "medium" } }
+
+[models.sonnet]
+route = "anthropic"
+id = "claude-sonnet-5-5"
+openrouter_id = "anthropic/claude-sonnet-5.5"
+usd_per_m_in = 2.0
+usd_per_m_out = 10.0
+params = { max_tokens = 16000, thinking = { type = "adaptive" }, output_config = { effort = "medium" } }
+
+[models.opus]
+route = "anthropic"
+id = "claude-opus-5-5"
+openrouter_id = "anthropic/claude-opus-5.5"
+usd_per_m_in = 4.0
+usd_per_m_out = 20.0
+params = { max_tokens = 16000, thinking = { type = "adaptive" }, output_config = { effort = "medium" } }
+
+[models.fable]
+route = "anthropic"
+id = "claude-fable-5-1"
+openrouter_id = "anthropic/claude-fable-5.1"
+usd_per_m_in = 10.0
+usd_per_m_out = 50.0
+params = { max_tokens = 16000, thinking = { type = "adaptive" }, output_config = { effort = "medium" } }
+
+[models.luna]
+route = "openai"
+id = "gpt-6-luna"
+openrouter_id = "openai/gpt-6-luna"
+usd_per_m_in = 0.10
+usd_per_m_out = 0.50
+params = { max_completion_tokens = 16000, reasoning_effort = "medium" }
+
+[models.sol]
+route = "openai"
+id = "gpt-6.1-sol"
+openrouter_id = "openai/gpt-6.1-sol"
+usd_per_m_in = 2.0
+usd_per_m_out = 10.0
+params = { max_completion_tokens = 16000, reasoning_effort = "medium" }
+
+[models.astra]
+route = "openai"
+id = "gpt-6-astra"
+openrouter_id = "openai/gpt-6-astra"
+usd_per_m_in = 10.0
+usd_per_m_out = 50.0
+params = { max_completion_tokens = 16000, reasoning_effort = "medium" }
+
+[models.gemini]
+route = "openrouter"
+id = "google/gemini-4-argon"
+openrouter_id = "google/gemini-4-argon"
+usd_per_m_in = 2.0
+usd_per_m_out = 10.0
+params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }
+
+[models.grok]
+route = "openrouter"
+id = "x-ai/grok-4.7"
+openrouter_id = "x-ai/grok-4.7"
+usd_per_m_in = 2.0
+usd_per_m_out = 6.0
+params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }
+
+[models.qwen]
+route = "openrouter"
+id = "qwen/qwen3.8-max-prime"
+openrouter_id = "qwen/qwen3.8-max-prime"
+usd_per_m_in = 4.0
+usd_per_m_out = 12.0
+params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }
+
+[models.deepseek]
+route = "openrouter"
+id = "deepseek/deepseek-v4-pro"
+openrouter_id = "deepseek/deepseek-v4-pro"
+usd_per_m_in = 0.21
+usd_per_m_out = 0.42
+params = { max_tokens = 16000, reasoning = { effort = "medium" }, provider = { require_parameters = true } }

@@ -38,5 +38,6 @@ htmlcov/
 # uv
 .cache/
 
-# Experiment output (published separately once final)
-runs/
+# Experiment output: smoke runs stay local, the paper's run is published
+runs/*
+!runs/paper.jsonl
