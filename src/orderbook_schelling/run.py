@@ -26,6 +26,7 @@ from orderbook_schelling.prompts import receiver_prompt, sender_prompt
 
 REPO = Path(__file__).resolve().parents[2]
 CONDITIONS = ("anon", "monitored")
+TOKEN_CAP = ("max_tokens", "length", "model_context_window_exceeded")
 TRACKED = ("src", "experiments", "pyproject.toml", "uv.lock")
 OPERATIONAL = ("budget_usd", "max_usd_per_trial", "workers", "allow_dirty")  # can change between runs of one experiment
 
@@ -72,6 +73,7 @@ class Experiment:
         if missing := names - self.models.keys():
             sys.exit(f"pairs or clean_receivers name unknown models: {sorted(missing)}")
         self.out = REPO / "runs" / f"{self.cfg['name']}.jsonl"
+        self.errors = REPO / "runs" / f"{self.cfg['name']}.errors.jsonl"
         self.out.parent.mkdir(exist_ok=True)
         rows = self.read_rows()
         own = (self.meta["config_sha256"], self.meta["code"])
@@ -129,6 +131,16 @@ class Experiment:
             with self.out.open("a") as f:
                 f.write(json.dumps({**self.meta, "trial": trial, "time": time.time(), **row}) + "\n")
 
+    def fail(self, trial: str, reply: Reply, cost: float) -> None:
+        """Log an API failure to runs/<name>.errors.jsonl and release the trial so a rerun retries it."""
+        print(f"retry later: {trial}: {reply.error}", file=sys.stderr)
+        with self.room, self.errors.open("a") as f:
+            f.write(
+                json.dumps({"trial": trial, "time": time.time(), "model": reply.model_served, "error": reply.error})
+                + "\n"
+            )
+        self.finish(trial, None, cost)
+
     def call(self, name: str, prompt: str) -> tuple[Reply, float]:
         """One model call and its cost at the config's per-million-token prices."""
         m = self.models[name]
@@ -145,7 +157,7 @@ def sender_status(reply: Reply, parsed_status: str) -> str:
     """Parser status (sent/empty/unparsed), or refused on a provider refusal/filter stop, or truncated at the cap."""
     if reply.stop_reason in ("refusal", "content_filter"):
         return "refused"
-    if parsed_status == "unparsed" and reply.stop_reason in ("max_tokens", "length"):
+    if parsed_status == "unparsed" and reply.stop_reason in TOKEN_CAP:
         return "truncated"
     return parsed_status
 
@@ -159,8 +171,7 @@ def message_trial(exp: Experiment, sender: str, receiver: str, condition: str, w
     prompt = sender_prompt(word, recent_orders(market), condition == "monitored")
     s_reply, cost = exp.call(sender, prompt)
     if s_reply.error:
-        print(f"retry later: {trial}: {s_reply.error}", file=sys.stderr)
-        return exp.finish(trial, None, cost)
+        return exp.fail(trial, s_reply, cost)
     parsed = parse_sender(s_reply.text)
     row: dict[str, Any] = {
         "kind": "message",
@@ -173,6 +184,7 @@ def message_trial(exp: Experiment, sender: str, receiver: str, condition: str, w
         "sender_prompt": prompt,
         "sender_reply": asdict(s_reply),
         "status": sender_status(s_reply, parsed.status),
+        "hit_token_cap": s_reply.stop_reason in TOKEN_CAP,
         "orders": [asdict(o) for o in parsed.orders],
         "rejected": [asdict(r) for r in parsed.rejected],
         "decoded": False,
@@ -182,8 +194,7 @@ def message_trial(exp: Experiment, sender: str, receiver: str, condition: str, w
         tape = render_tape(feed)
         r_reply, r_cost = exp.call(receiver, receiver_prompt(tape))
         if r_reply.error:
-            print(f"retry later: {trial}: {r_reply.error}", file=sys.stderr)
-            return exp.finish(trial, None, cost + r_cost)
+            return exp.fail(trial, r_reply, cost + r_cost)
         cost += r_cost
         guess = parse_receiver(r_reply.text)
         row |= {
@@ -205,8 +216,7 @@ def clean_trial(exp: Experiment, receiver: str, word: str, rep: int) -> None:
     tape = render_tape(clean_feed(f"{exp.cfg['base_seed']}|{word}|{rep}"))
     r_reply, cost = exp.call(receiver, receiver_prompt(tape))
     if r_reply.error:
-        print(f"retry later: {trial}: {r_reply.error}", file=sys.stderr)
-        return exp.finish(trial, None, cost)
+        return exp.fail(trial, r_reply, cost)
     guess = parse_receiver(r_reply.text)
     exp.finish(
         trial,

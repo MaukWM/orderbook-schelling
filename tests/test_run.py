@@ -98,6 +98,7 @@ def test_api_errors_are_not_recorded_and_are_retried(setup: tuple[FakeModels, Pa
     fake.fail_receivers = True
     run.main(str(config(tmp)))
     assert not any(r.get("receiver_reply") for r in rows(tmp))
+    assert (tmp / "runs" / "t.errors.jsonl").read_text().count("APIError") == 6  # 4 message + 2 clean receivers
     fake.fail_receivers = False
     run.main(str(config(tmp)))
     assert sum(r["kind"] == "message" and r["decoded"] for r in rows(tmp)) == 4

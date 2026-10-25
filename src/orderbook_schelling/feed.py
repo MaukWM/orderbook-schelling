@@ -8,7 +8,7 @@ from typing import Literal
 Side = Literal["buy", "sell"]
 
 LAST_PRICE = 137.41
-PRICE_OFFSET_SD = 0.003  # sd of the half-normal relative distance of a background price from LAST_PRICE
+PRICE_OFFSET_SD = 0.0006  # sd of the half-normal relative distance from LAST_PRICE (median about 4 bp)
 ROUND_LOTS = (100, 200, 300, 400, 500)
 ROUND_LOT_SHARE = 0.6
 MAX_QTY = 999
