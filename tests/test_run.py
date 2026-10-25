@@ -87,7 +87,7 @@ def test_full_run_records_each_trial_once_and_decodes(setup: tuple[FakeModels, P
     assert all(r["status"] == "refused" and r["decoded"] is False and "tape" not in r for r in refused)
     assert all(r["kind"] != "clean" or r["decoded"] is False for r in out)
     tapes = {r["condition"]: r["tape"] for r in sent if r["word"] == "HELLO"}
-    assert tapes["anon"] == tapes["monitored"]  # same market for both conditions
+    assert tapes["unwarned"] == tapes["warned"]  # same market for both conditions
     calls = len(fake.calls)
     run.main(str(config(tmp)))
     assert len(fake.calls) == calls and len(rows(tmp)) == len(out)  # rerun skips finished trials

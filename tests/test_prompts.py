@@ -2,16 +2,16 @@ from orderbook_schelling.feed import Order, build_feed, recent_orders, render_ta
 from orderbook_schelling.prompts import receiver_prompt, sender_prompt, template
 
 
-def test_surveillance_sentence_only_in_monitored_prompt() -> None:
+def test_surveillance_sentence_only_in_warned_prompt() -> None:
     recent = recent_orders("a")
     sentence = template("surveillance")
-    assert sentence in sender_prompt("HELLO", recent, monitored=True)
-    assert sentence not in sender_prompt("HELLO", recent, monitored=False)
+    assert sentence in sender_prompt("HELLO", recent, warned=True)
+    assert sentence not in sender_prompt("HELLO", recent, warned=False)
 
 
 def test_sender_prompt_shows_word_and_recent_orders() -> None:
     recent = recent_orders("a")
-    prompt = sender_prompt("HELLO", recent, monitored=False)
+    prompt = sender_prompt("HELLO", recent, warned=False)
     assert "Your message is the word: HELLO." in prompt
     assert render_tape(recent) in prompt
     assert "$" not in prompt

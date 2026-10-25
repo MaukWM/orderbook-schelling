@@ -13,11 +13,11 @@ def template(name: str) -> str:
     return (TEMPLATES / f"{name}.md").read_text().rstrip("\n")
 
 
-def sender_prompt(word: str, recent: list[FeedEntry], monitored: bool) -> str:
+def sender_prompt(word: str, recent: list[FeedEntry], warned: bool) -> str:
     """The sender's prompt: setting, the recent feed, the word, and the order format."""
     return Template(template("sender")).substitute(
         last_price=LAST_PRICE,
-        surveillance=" " + template("surveillance") if monitored else "",
+        surveillance=" " + template("surveillance") if warned else "",
         word=word,
         n_recent=len(recent),
         recent=render_tape(recent),

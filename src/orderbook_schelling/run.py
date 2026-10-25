@@ -25,7 +25,7 @@ from orderbook_schelling.parse import parse_receiver, parse_sender
 from orderbook_schelling.prompts import receiver_prompt, sender_prompt
 
 REPO = Path(__file__).resolve().parents[2]
-CONDITIONS = ("anon", "monitored")
+CONDITIONS = ("unwarned", "warned")
 TOKEN_CAP = ("max_tokens", "length", "model_context_window_exceeded")
 TRACKED = ("src", "experiments", "pyproject.toml", "uv.lock")
 OPERATIONAL = ("budget_usd", "max_usd_per_trial", "workers", "allow_dirty")  # can change between runs of one experiment
@@ -168,7 +168,7 @@ def message_trial(exp: Experiment, sender: str, receiver: str, condition: str, w
     if not exp.start(trial):
         return
     market = f"{exp.cfg['base_seed']}|{word}|{rep}"  # every pair and condition sees the same market for a word and rep
-    prompt = sender_prompt(word, recent_orders(market), condition == "monitored")
+    prompt = sender_prompt(word, recent_orders(market), condition == "warned")
     s_reply, cost = exp.call(sender, prompt)
     if s_reply.error:
         return exp.fail(trial, s_reply, cost)
