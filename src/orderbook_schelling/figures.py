@@ -5,6 +5,7 @@ usage: uv run python -m orderbook_schelling.figures runs/<name>.jsonl <out_dir>
 
 import json
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -69,21 +70,29 @@ def sender_status(msgs: list[dict[str, Any]], models: list[str], out: Path) -> N
     """Share of each sender status per sender model and condition, pooled over receivers."""
     by = group(msgs, "sender", "condition")
     rows = [(s, c) for s in models for c in CONDITIONS if (s, c) in by]
-    fig, ax = plt.subplots(figsize=(6.5, 2.0))
-    for i, key in enumerate(rows):
+    ys = [i + 0.6 * models.index(s) for i, (s, _) in enumerate(rows)]  # a gap between sender models
+    fig, ax = plt.subplots(figsize=(6.5, 2.4))
+    for y, key in zip(ys, rows, strict=True):
         rs, left = by[key], 0.0
         for status, colour in STATUS_COLOUR.items():
             share = sum(r["status"] == status for r in rs) / len(rs)
             if share:
-                ax.barh(i, share, left=left, color=colour, edgecolor="white", lw=1, label=status)
+                ax.barh(y, share, left=left, color=colour, edgecolor="white", lw=1, label=status)
             left += share
     handles, labels = ax.get_legend_handles_labels()
     unique = dict(zip(labels, handles, strict=True))
     ax.legend(unique.values(), unique.keys(), frameon=False, ncol=5, loc="lower left", bbox_to_anchor=(0, 1.0))
-    ax.set_yticks(range(len(rows)), [f"{s} ({c})" for s, c in rows])
+    ax.set_yticks(ys, [f"{s} ({c})" for s, c in rows])
     ax.invert_yaxis()
     ax.set_xlim(0, 1)
     ax.set_xlabel("share of sender trials (pooled over receivers)")
+    fig.tight_layout()
+    # left-align the labels: pad them by the widest label's width
+    fig.canvas.draw()
+    widest = max(t.get_window_extent().width for t in ax.get_yticklabels()) * 72 / fig.dpi
+    ax.tick_params(axis="y", pad=widest + 3)
+    for t in ax.get_yticklabels():
+        t.set_horizontalalignment("left")
     fig.tight_layout()
     fig.savefig(out / "sender_status.pdf")
     plt.close(fig)
@@ -110,6 +119,65 @@ def decoding_by_word(msgs: list[dict[str, Any]], pairs: list[tuple[str, str]], w
     plt.close(fig)
 
 
+EXAMPLE = ("astra", "astra", "HORSE", "unwarned")  # sender, receiver, word, condition of the example trial
+HIGHLIGHT, ROBOT = "#fbd77a", "#a9bfdc"
+
+
+def robot(ax: Any, x: float, y: float) -> None:
+    """A small robot head centred at (x, y) in axes data units."""
+    from matplotlib.patches import Ellipse, FancyBboxPatch
+
+    ax.add_patch(FancyBboxPatch((x - 0.42, y - 0.25), 0.84, 0.5, boxstyle="round,pad=0.02", fc=ROBOT, ec=INK, lw=0.8))
+    for dx in (-0.18, 0.18):
+        ax.add_patch(Ellipse((x + dx, y + 0.06), 0.17, 0.14, fc="white", ec=INK, lw=0.6))
+    ax.plot([x - 0.16, x + 0.16], [y - 0.13, y - 0.13], color=INK, lw=0.8)
+    ax.plot([x, x], [y + 0.27, y + 0.4], color=INK, lw=0.8)
+    ax.add_patch(Ellipse((x, y + 0.42), 0.09, 0.075, fc=INK))
+
+
+def example_trial(msgs: list[dict[str, Any]], out: Path) -> None:
+    """The example trial: the sender's word, the tape with its orders highlighted, the receiver's answer."""
+    sender, receiver, word, cond = EXAMPLE
+    r = next(r for r in msgs if (r["sender"], r["receiver"], r["word"], r["condition"]) == EXAMPLE)
+    tape = [(line.split(), mine) for line, mine in zip(r["tape"].splitlines()[1:], r["from_sender"], strict=True)]
+    half = (len(tape) + 1) // 2
+    top = 0.15 * half + 0.5
+    fig, ax = plt.subplots(figsize=(6.5, 0.12 * half + 0.35))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, top)
+    ax.axis("off")
+    mid = top / 2
+    robot(ax, 0.8, mid)
+    ax.text(0.8, mid + 0.6, f"sender ({sender})\nword: {word}", fontsize=7, ha="center", va="bottom", color=INK)
+    for col in range(2):
+        ax.text(2.0 + 2.6 * col, top - 0.15, "seq side price    qty", fontsize=6.2, family="monospace", color=MUTED)
+    for i, (cells, mine) in enumerate(tape):
+        qty = int(cells[3])
+        letter = f" {chr(qty)}" if mine and 65 <= qty <= 90 else "  "
+        ax.text(
+            2.0 + 2.6 * (i // half),
+            top - 0.32 - 0.15 * (i % half),
+            f"{cells[0]:>3} {cells[1]:<4} {cells[2]} {cells[3]:>4}{letter}",
+            fontsize=6.2,
+            family="monospace",
+            va="center",
+            color=INK,
+            weight="bold" if letter.strip() else "normal",
+            bbox={"fc": HIGHLIGHT, "ec": "none", "pad": 0.4} if mine else None,
+        )
+    arrow = {"arrowstyle": "->", "color": MUTED}
+    ax.annotate("", (1.95, mid), (1.45, mid), arrowprops=arrow)
+    ax.annotate("", (7.6, mid), (7.1, mid), arrowprops=arrow)
+    robot(ax, 8.4, mid)
+    ax.text(8.4, mid + 0.6, f"receiver ({receiver})", fontsize=7, ha="center", va="bottom", color=INK)
+    ax.text(8.4, mid - 0.5, f'answer: "{r["guess"]}"', fontsize=7.5, ha="center", va="top", weight="bold", color=INK)
+    how = json.loads(r["receiver_reply"]["text"])["how"]
+    ax.text(8.4, mid - 0.72, textwrap.fill(how, 30), fontsize=6, ha="center", va="top", style="italic", color=MUTED)
+    fig.tight_layout(pad=0.1)
+    fig.savefig(out / "example_trial.pdf")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     rows = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines() if line.strip()]
     out = Path(sys.argv[2])
@@ -122,4 +190,5 @@ if __name__ == "__main__":
     decoding_by_pair(msgs, pairs, chance, out)
     sender_status(msgs, models, out)
     decoding_by_word(msgs, pairs, words, out)
+    example_trial(msgs, out)
     print(f"figures written to {out}")
