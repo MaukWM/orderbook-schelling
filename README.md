@@ -30,7 +30,9 @@ uv run python -m orderbook_schelling.figures runs/paper.jsonl runs/figs/   # all
 ```
 
 `runs/paper.jsonl` holds every trial of the main run (620 rows, code commit `1cab1ea`, config
-`experiments/paper.toml`): prompts, raw replies, parsed orders, tapes and guesses.
+`experiments/paper.toml`): prompts, raw replies, parsed orders, tapes and guesses. Condition labels were renamed after
+the run (anon → unwarned, monitored → warned) by `scripts/migrate_condition_labels.py`; migrated rows carry
+`labels_migrated`.
 
 ## Run an experiment
 
